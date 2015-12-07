@@ -3,6 +3,10 @@ module Clustering
     using Distances
     using StatsBase
     using Compat
+
+    using DistributedArrays
+    using DistributedArrays: DVector, DMatrix, map_localparts
+    using DistributedDistances
     
     import Base: show
     import StatsBase: IntegerVector, RealVector, RealMatrix, counts
@@ -21,7 +25,7 @@ module Clustering
 
     # seeding
     SeedingAlgorithm, 
-    RandSeedAlg, KmppAlg, KmCentralityAlg,
+    RandSeedAlg, KmppAlg, KmCentralityAlg, KmparAlg,
     copyseeds, copyseeds!,
     initseeds, initseeds!, 
     initseeds_by_costs, initseeds_by_costs!,
