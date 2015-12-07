@@ -76,6 +76,73 @@ initseeds_by_costs!(iseeds::IntegerVector, alg::RandSeedAlg, X::RealMatrix) =
     sample!(1:size(X,2), iseeds; replace=false)
 
 
+# Kmeans|| seeding
+#
+#   Scalable K-Means ++
+#   B. Bahmani, B. Moseley, A. Vattani et al.
+#   Proceedings of the VLDB Endowment, 2012.
+
+type KmparAlg <: SeedingAlgorithm
+    l::Int    # oversampling factor
+    r::Int    # iterations
+end
+
+initcenters(k::Int, alg::KmparAlg, X::RealMatrix) = 
+    initcenters(k, alg, X, SqEuclidean())
+
+function initcenters(k::Int, alg::KmparAlg, X::RealMatrix, metric::PreMetric)
+    n = size(X, 2)
+    check_seeding_args(n, k)
+    nsamples = alg.r * alg.l
+
+    k <= nsamples || error("The number of intermediate seeds (l * r) must atleast be number of seeds.")
+
+    # create space for intermediate seeds
+    ppseeds = Array(Int, nsamples)
+    ppX = Array(eltype(X), size(X,1), nsamples)
+
+    # randomly pick the first center
+    p = rand(1:n)
+    ppidx = 1
+    ppseeds[ppidx] = p
+    ppX[:,ppidx] = X[:,p]
+
+    if k > 1
+        mincosts = colwise(metric, X, view(X,:,p))
+        # select each point with l times probability
+        mincosts .*= alg.l
+        mincosts[p] = 0
+
+        # pick remaining (with a chance proportional to mincosts)
+        for j = 1:alg.r
+            # on each iteration select l centers
+            # sampling with replacement is what kmeans|| recommends
+            newc = wsample(1:n, mincosts, min(alg.l, nsamples-ppidx); replace=true)
+            beginppidx = ppidx+1
+            for c in newc
+                ppidx += 1
+                ppseeds[ppidx] = c
+                ppX[:,ppidx] = X[:,c]
+                mincosts[c] = 0
+            end
+
+            # update mincosts
+            centers = view(ppX, :, beginppidx:ppidx)
+            dmat = pairwise(metric, centers, X)
+            # dmat is of size ppidx x n
+            updatemin!(mincosts, dmat)
+        end
+    end
+
+    if nsamples > k
+        # cluster the samples locally to get k centers
+        kseeds = kmeans(ppX, k; init=KmppAlg())
+        return kseeds.centers
+    else
+        return ppX
+    end
+end
+
 # Kmeans++ seeding
 #
 #   D. Arthur and S. Vassilvitskii (2007). 

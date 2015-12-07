@@ -21,7 +21,7 @@ module Clustering
 
     # seeding
     SeedingAlgorithm, 
-    RandSeedAlg, KmppAlg, KmCentralityAlg,
+    RandSeedAlg, KmppAlg, KmCentralityAlg, KmparAlg,
     copyseeds, copyseeds!,
     initseeds, initseeds!, 
     initseeds_by_costs, initseeds_by_costs!,

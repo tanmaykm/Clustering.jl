@@ -48,8 +48,12 @@ function kmeans(X::Matrix, k::Int;
 
     m, n = size(X)
     (2 <= k < n) || error("k must have 2 <= k < n.")
-    iseeds = initseeds(init, X, k)
-    centers = copyseeds(X, iseeds)
+    if isa(init, KmparAlg)
+        centers = initcenters(k, init, X)
+    else
+        iseeds = initseeds(init, X, k)
+        centers = copyseeds(X, iseeds)
+    end
     kmeans!(X, centers; 
             weights=weights, 
             maxiter=maxiter,

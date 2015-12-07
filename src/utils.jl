@@ -42,3 +42,16 @@ function updatemin!(r::AbstractArray, x::AbstractArray)
     end
     return r
 end
+
+function updatemin!(r::AbstractArray, x::AbstractMatrix)
+    n = length(r)
+    k = size(x, 1)
+    size(x,2) == n || throw(DimensionMismatch("Inconsistent array lengths."))
+    @inbounds for i = 1:n
+        xi = minimum(view(x, 1:k, i))
+        if xi < r[i]
+            r[i] = xi
+        end
+    end
+    return r
+end
